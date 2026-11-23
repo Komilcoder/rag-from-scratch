@@ -1,16 +1,50 @@
-# This is a sample Python script.
+import uvicorn
+from fastapi import FastAPI, APIRouter, Depends
+from fastapi.openapi.docs import get_swagger_ui_html
+from pydantic import BaseModel
+from rag import load_documents, embed, answer, load_index
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+app = FastAPI()
+
+documents = load_index()
+# print(answer("How much did Malika Yusupova's trip cost?", documents))
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+class Question(BaseModel):
+    question: str
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+@app.post("/api/ask/")
+def ask(body:Question):
+    return answer(body.question, documents)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
+@app.get("/api/v1/swagger/", include_in_schema=False)
+async def swagger_ui():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title="XS Auth",
+    )
+
+router = APIRouter(prefix="/agent")
+
+# all_routers = [
+#     agent_router,
+#
+# ]
+
+
+# for router in all_routers:
+#     app.include_router(router, prefix="/api/v1/auth")
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main_api:app",
+        host="127.0.0.1",
+        port=8008,
+        log_level="info",
+        reload=False,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )

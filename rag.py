@@ -9,14 +9,13 @@ from pydantic import BaseModel, Field, ValidationError
 import strip
 from dotenv import load_dotenv
 import os
-import strip
 import numpy as np
 from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.messages import SystemMessage
 
 load_dotenv()
 
-
+MIN_SCORE = 0.47
 
 def cosine_similarity(a, b):
     a, b = np.array(a), np.array(b)
@@ -35,6 +34,9 @@ def search(question, documents, top_k=2):
 
 def answer(question, documents):
     results = search(question, documents)
+    results = [(score, doc) for score, doc in search(question, documents) if score >= MIN_SCORE]
+    if not results:
+        return {"answer": "I don't know based on the documents.", "sources": []}
     context = "\n\n".join(f"[{doc['source']}]\n{doc['text']}" for score, doc in results)
     message = [
         SystemMessage("You are a business trip assistant.\n"
